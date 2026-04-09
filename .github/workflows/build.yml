@@ -1,13 +1,6 @@
-name: Build WeChatTTS Tweak
+name: Build WeChatTTS
 
-# 强制Node.js 24环境，彻底解决弃用警告
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   build:
@@ -15,32 +8,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang git libtool libssl-dev
+          sudo apt-get install -y build-essential perl git curl libfl-dev libssl-dev libyaml-cpp-dev libncurses5-dev ldid
 
-      - name: Install Theos
+      - name: Setup Theos
         run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "$HOME/theos/bin" >> $GITHUB_PATH
+          export THEOS=$GITHUB_WORKSPACE/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          # 下载 SDK
+          mkdir -p $THEOS/sdks
+          curl -LO https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz
+          tar -xJf iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
+          # 下载 Linux 工具链
+          mkdir -p $THEOS/toolchain/linux/iphone
+          curl -LO https://github.com/theos/toolchain/releases/download/v1.0/linux-arm64.tar.gz
+          tar -xzf linux-arm64.tar.gz -C $THEOS/toolchain/linux/iphone
 
       - name: Build Tweak
         run: |
-          # 强制进入工作目录，解决路径错误
-          cd $GITHUB_WORKSPACE
-          make clean
-          make package
+          export THEOS=$GITHUB_WORKSPACE/theos
+          export PATH=$THEOS/bin:$PATH
+          make package FINALPACKAGE=1
 
-      - name: Upload Artifacts
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: WeChatTTS_Result
-          path: |
-            packages/*.deb
-            .theos/obj/debug/WeChatTTS.dylib
-            WeChatTTS.plist
+          name: WeChatTTS-Plugin
+          path: packages/*.deb
