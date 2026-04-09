@@ -1,36 +1,29 @@
 name: Build WeChatTTS
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest  # 使用 macOS 服务器编译，最稳定
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential perl git curl libfl-dev libssl-dev libyaml-cpp-dev libncurses5-dev ldid
-
       - name: Setup Theos
         run: |
-          export THEOS=$GITHUB_WORKSPACE/theos
+          export THEOS=~/theos
           git clone --recursive https://github.com/theos/theos.git $THEOS
-          # 下载 SDK
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+          echo "$THEOS/bin" >> $GITHUB_PATH
+
+      - name: Setup SDK
+        run: |
           mkdir -p $THEOS/sdks
-          curl -LO https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz
-          tar -xJf iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
-          # 下载 Linux 工具链
-          mkdir -p $THEOS/toolchain/linux/iphone
-          curl -LO https://github.com/theos/toolchain/releases/download/v1.0/linux-arm64.tar.gz
-          tar -xzf linux-arm64.tar.gz -C $THEOS/toolchain/linux/iphone
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
+          tar -xJf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
 
       - name: Build Tweak
         run: |
-          export THEOS=$GITHUB_WORKSPACE/theos
-          export PATH=$THEOS/bin:$PATH
           make package FINALPACKAGE=1
 
       - name: Upload Artifact
