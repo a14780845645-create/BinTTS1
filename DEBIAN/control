@@ -1,0 +1,9 @@
+Package: com.yourname.wechattts
+Name: WeChatTTS 微信文字转语音
+Depends: mobilesubstrate
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: 微信文字转语音插件，支持Fish Audio接口
+Maintainer: 彬
+Author: 彬
+Section: Tweaks
