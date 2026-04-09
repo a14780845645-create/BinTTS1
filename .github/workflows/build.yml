@@ -1,35 +1,30 @@
-name: Build WeChatTTS Tweak
+name: Build WeChatTTS
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 解决你提到的 Node.js 版本警告
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4  # 使用最新版本
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y clang git libtool libssl-dev
-
-      - name: Install Theos
-        run: |
-          git clone --recursive https://github.com/theos/theos.git ~/theos
-          echo "THEOS=~/theos" >> $GITHUB_ENV
+      - name: Setup Theos and iOS SDK
+        uses: theos/theos-action@v1
+        with:
+          theos-version: 'master'
+          sdk-version: '14.5'  # 强制指定 14.5 SDK，兼容性最强
 
       - name: Build Tweak
         run: |
-          make clean
-          make package
+          export THEOS=$GITHUB_WORKSPACE/theos
+          export PATH=$THEOS/bin:$PATH
+          make package FINALPACKAGE=1  # 强制生成正式版包
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4  # 使用最新版本上传插件
         with:
-          name: WeChatTTS_Result
-          path: |
-            packages/*.deb
-            .theos/obj/WeChatTTS.dylib
+          name: WeChatTTS-Plugin
+          path: packages/*.deb
