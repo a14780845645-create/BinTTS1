@@ -1,33 +1,44 @@
-name: Build WeChatTTS
+name: Build WeChatTTS Tweak
 
-on: [push, pull_request, workflow_dispatch]
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest  # 使用 macOS 服务器编译，最稳定
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-      - name: Setup Theos
+      - name: Install Dependencies
         run: |
-          export THEOS=~/theos
-          git clone --recursive https://github.com/theos/theos.git $THEOS
-          echo "THEOS=$THEOS" >> $GITHUB_ENV
-          echo "$THEOS/bin" >> $GITHUB_PATH
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang git libtool libssl-dev
 
-      - name: Setup SDK
+      - name: Install Theos
         run: |
-          mkdir -p $THEOS/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
-          tar -xJf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks
+          git clone --recursive https://github.com/theos/theos.git $HOME/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
       - name: Build Tweak
         run: |
-          make package FINALPACKAGE=1
+          cd $GITHUB_WORKSPACE
+          make clean
+          make package
 
-      - name: Upload Artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: WeChatTTS-Plugin
-          path: packages/*.deb
+          name: WeChatTTS_Result
+          path: |
+            packages/*.deb
+            .theos/obj/debug/WeChatTTS.dylib
+            WeChatTTS.plist
