@@ -1,15 +1,21 @@
 name: Build BinTTS Tweak
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # 强制指定具体版本，不使用 latest，彻底避免自动后缀问题
+    runs-on: macos-13
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        # 用 v3 稳定版，彻底解决 Node.js 20 弃用警告
+        uses: actions/checkout@v3
         with:
           submodules: recursive
+          fetch-depth: 1
 
       - name: Install Theos
         run: |
@@ -23,14 +29,16 @@ jobs:
 
       - name: Build Tweak
         run: |
+          # 强制进入工作目录，防止路径错误
+          cd $GITHUB_WORKSPACE
           make clean
           make package
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: BinTTS_Output
           path: |
             packages/*.deb
-            .theos/_/Library/MobileSubstrate/DynamicLibraries/BinTTS.dylib
+            .theos/obj/debug/BinTTS.dylib
             BinTTS.plist
