@@ -1,4 +1,4 @@
-name: Build BinTTS Tweak
+name: Build WeChatTTS Tweak
 
 on:
   push:
@@ -7,38 +7,24 @@ on:
 
 jobs:
   build:
-    # 强制指定具体版本，不使用 latest，彻底避免自动后缀问题
     runs-on: macos-13
     steps:
-      - name: Checkout code
-        # 用 v3 稳定版，彻底解决 Node.js 20 弃用警告
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
-          fetch-depth: 1
+      - uses: actions/checkout@v3
 
       - name: Install Theos
         run: |
-          git clone --recursive https://github.com/theos/theos.git $HOME/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "$HOME/theos/bin" >> $GITHUB_PATH
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          echo "THEOS=~/theos" >> $GITHUB_ENV
 
-      - name: Install Dependencies
+      - name: Build
         run: |
-          brew install dpkg ldid
-
-      - name: Build Tweak
-        run: |
-          # 强制进入工作目录，防止路径错误
-          cd $GITHUB_WORKSPACE
           make clean
           make package
 
-      - name: Upload Artifacts
+      - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: BinTTS_Output
+          name: WeChatTTS
           path: |
             packages/*.deb
-            .theos/obj/debug/BinTTS.dylib
-            BinTTS.plist
+            .theos/obj/WeChatTTS.dylib
