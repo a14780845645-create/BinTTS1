@@ -17,16 +17,27 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential clang git libtool libssl-dev
+          sudo apt-get install -y build-essential clang git libtool libssl-dev wget unzip
 
       - name: Install Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git $HOME/theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
+
+      - name: Install iOS SDK (关键！解决SDK缺失报错)
+        run: |
+          # 创建SDK目录
+          mkdir -p $HOME/theos/sdks
+          # 下载iOS 15 SDK（适配你的Makefile）
+          wget https://github.com/theos/sdks/raw/main/iPhoneOS15.0.sdk.zip -O $HOME/theos/sdks/iPhoneOS15.0.sdk.zip
+          # 解压SDK
+          unzip -q $HOME/theos/sdks/iPhoneOS15.0.sdk.zip -d $HOME/theos/sdks/
+          # 删除压缩包
+          rm $HOME/theos/sdks/iPhoneOS15.0.sdk.zip
 
       - name: Build Tweak
         run: |
